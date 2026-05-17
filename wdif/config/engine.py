@@ -34,9 +34,18 @@ class IngestionPolicy:
 
 
 @dataclass
+class ExtractionMappings:
+    prompt: list[str] = field(default_factory=list)
+    documents: list[str] = field(default_factory=list)
+    output_text: list[str] = field(default_factory=list)
+    model_name: list[str] = field(default_factory=list)
+
+
+@dataclass
 class WdifConfig:
     version: str = "1.0.0"
     tokenizer: TokenizerPolicy = field(default_factory=TokenizerPolicy)
+    extraction_mappings: ExtractionMappings = field(default_factory=ExtractionMappings)
     heuristics: dict[str, HeuristicPolicy] = field(default_factory=dict)
     ingestion: IngestionPolicy = field(default_factory=IngestionPolicy)
     exit_codes: dict[str, int] = field(
@@ -91,6 +100,7 @@ def validate_config(config: WdifConfig) -> None:
     allowed_severities = {"CRITICAL", "WARNING", "INFO"}
     allowed_tokenizers = {"tiktoken", "huggingface", "regex"}
     allowed_failures = {failure.value for failure in FailureType}
+    allowed_mappings = {"prompt", "documents", "output_text", "model_name"}
 
     if config.tokenizer.provider.lower() not in allowed_tokenizers:
         raise ConfigError(
@@ -111,6 +121,14 @@ def validate_config(config: WdifConfig) -> None:
         raise ConfigError(
             f"Invalid ingestion.dead_letter_severity '{config.ingestion.dead_letter_severity}'."
         )
+
+    for name in allowed_mappings:
+        paths = getattr(config.extraction_mappings, name)
+        for path in paths:
+            if not isinstance(path, str) or not path.startswith("$."):
+                raise ConfigError(
+                    f"extraction_mappings.{name} entries must be JSONPath-like strings starting with '$.'."
+                )
 
     for name, policy in config.heuristics.items():
         if name not in allowed_failures:
@@ -161,6 +179,7 @@ def _load_mapping(path: Path) -> dict[str, Any]:
 
 def _config_from_mapping(raw: dict[str, Any]) -> WdifConfig:
     tokenizer = _tokenizer_from_raw(raw.get("tokenizer", {}))
+    extraction_mappings = _extraction_mappings_from_raw(raw.get("extraction_mappings", {}))
 
     heuristics_raw = _normalize_heuristics(raw)
     heuristics: dict[str, HeuristicPolicy] = {}
@@ -200,10 +219,31 @@ def _config_from_mapping(raw: dict[str, Any]) -> WdifConfig:
     return WdifConfig(
         version=str(raw.get("version", "1.0.0")),
         tokenizer=tokenizer,
+        extraction_mappings=extraction_mappings,
         heuristics=heuristics,
         ingestion=ingestion,
         exit_codes=exit_codes,
         concurrency=raw.get("concurrency"),
+    )
+
+
+def _extraction_mappings_from_raw(raw: Any) -> ExtractionMappings:
+    if not isinstance(raw, dict):
+        return ExtractionMappings()
+
+    def paths_for(name: str) -> list[str]:
+        value = raw.get(name, [])
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        return []
+
+    return ExtractionMappings(
+        prompt=paths_for("prompt"),
+        documents=paths_for("documents"),
+        output_text=paths_for("output_text"),
+        model_name=paths_for("model_name"),
     )
 
 

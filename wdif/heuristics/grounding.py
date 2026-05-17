@@ -2,39 +2,40 @@ from __future__ import annotations
 
 import re
 
-from wdif.extractors import extract_documents, extract_output_text
+from wdif.extractors import SpanExtractor, extract_documents, extract_output_text
 from wdif.models import FailureDiagnostic, FailureType, SpanType, TraceSpan
 
 
 class UngroundedAnswerHeuristic:
     """Flags answers that contain citations or factual claims without retrieved support."""
 
-    def __init__(self, min_answer_chars: int = 80):
+    def __init__(self, min_answer_chars: int = 80, extractor: SpanExtractor | None = None):
         self.min_answer_chars = min_answer_chars
+        self.extractor = extractor
 
     def analyze_span(self, span: TraceSpan) -> FailureDiagnostic | None:
         if span.span_type != SpanType.LLM:
             return None
 
-        answer = extract_output_text(span)
+        answer = extract_output_text(span, self.extractor)
         if len(answer) < self.min_answer_chars:
             return None
 
-        return self._analyze_with_documents(span, answer, extract_documents(span))
+        return self._analyze_with_documents(span, answer, extract_documents(span, self.extractor))
 
     def analyze_tree(self, root: TraceSpan) -> list[FailureDiagnostic]:
         tree_documents = []
         for span in root.walk():
-            tree_documents.extend(extract_documents(span))
+            tree_documents.extend(extract_documents(span, self.extractor))
 
         diagnostics: list[FailureDiagnostic] = []
         for span in root.walk():
             if span.span_type != SpanType.LLM:
                 continue
-            answer = extract_output_text(span)
+            answer = extract_output_text(span, self.extractor)
             if len(answer) < self.min_answer_chars:
                 continue
-            documents = extract_documents(span) or tree_documents
+            documents = extract_documents(span, self.extractor) or tree_documents
             diagnostic = self._analyze_with_documents(span, answer, documents)
             if diagnostic:
                 diagnostics.append(diagnostic)

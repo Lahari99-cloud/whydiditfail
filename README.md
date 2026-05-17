@@ -179,6 +179,15 @@ Tail a live JSONL trace file and flush staged traces after a short idle window:
 wdif watch traces/live.jsonl --flush-after 2 --dlq traces.corrupted.log
 ```
 
+Map framework-specific telemetry fields when upstream semantic conventions drift:
+
+```yaml
+extraction_mappings:
+  prompt: "$.attributes['gen_ai.prompt_text']"
+  documents: "$.attributes['custom_retriever.chunks']"
+  output_text: "$.attributes['gen_ai.response.text']"
+```
+
 Group spans split across multiple log files by `trace_id` before analysis:
 
 ```bash
@@ -256,6 +265,7 @@ The production ingestion path includes explicit safeguards for common enterprise
 - **Trace identity**: parsed spans and diagnostics preserve `trace_id` where present.
 - **Split-log staging**: `wdif batch --staged` groups spans by `trace_id` across multiple files before analysis.
 - **Live tailing**: `wdif watch` follows appended JSONL spans, stages by `trace_id`, and flushes traces after an idle window.
+- **Schema drift mapping**: `extraction_mappings` lets teams point prompt, document, output, and model fields at custom OpenTelemetry/GenAI layouts.
 - **Orphan detection**: unresolved child spans emit `ORPHANED_SPAN_TREE` diagnostics instead of silently becoming clean roots.
 - **Dead-letter queue**: malformed JSON rows are written to a `.corrupted.log` file and valid rows continue processing.
 - **DLQ policy exits**: set `ingestion.fail_on_dead_letters: true` and map `dead_letter_severity` through `exit_codes`.

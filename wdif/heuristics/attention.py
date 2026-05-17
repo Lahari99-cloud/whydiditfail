@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wdif.extractors import extract_documents, extract_prompt
+from wdif.extractors import SpanExtractor, extract_documents, extract_prompt
 from wdif.models import FailureDiagnostic, FailureType, SpanType, TraceSpan
 from wdif.tokenization import TokenCounter
 
@@ -16,18 +16,20 @@ class LostInTheMiddleHeuristic:
         blindspot_start_pct: float = 20.0,
         blindspot_end_pct: float = 80.0,
         max_prompt_chars: int = 100_000,
+        extractor: SpanExtractor | None = None,
     ):
         self.tokenizer = token_counter or TokenCounter(encoding_name)
         self.min_prompt_tokens = min_prompt_tokens
         self.blindspot_start_pct = blindspot_start_pct
         self.blindspot_end_pct = blindspot_end_pct
         self.max_prompt_chars = max_prompt_chars
+        self.extractor = extractor
 
     def analyze_span(self, span: TraceSpan) -> FailureDiagnostic | None:
         if span.span_type != SpanType.LLM:
             return None
 
-        prompt = extract_prompt(span)
+        prompt = extract_prompt(span, self.extractor)
         if not prompt:
             return None
 
@@ -35,7 +37,7 @@ class LostInTheMiddleHeuristic:
         if total_tokens < self.min_prompt_tokens:
             return None
 
-        for idx, chunk in enumerate(extract_documents(span)):
+        for idx, chunk in enumerate(extract_documents(span, self.extractor)):
             chunk_text = str(chunk.get("content") or chunk.get("text") or "")
             if not chunk_text:
                 continue

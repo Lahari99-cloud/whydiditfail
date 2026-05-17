@@ -28,6 +28,24 @@ heuristics:
     assert config.exit_code_for({"CRITICAL"}) == 1
 
 
+def test_loads_extraction_mappings_from_yaml(tmp_path):
+    config_file = tmp_path / "wdif.yaml"
+    config_file.write_text(
+        """
+extraction_mappings:
+  prompt: "$.attributes['gen_ai.prompt_text']"
+  documents:
+    - "$.attributes['custom_retriever.chunks']"
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_file)
+
+    assert config.extraction_mappings.prompt == ["$.attributes['gen_ai.prompt_text']"]
+    assert config.extraction_mappings.documents == ["$.attributes['custom_retriever.chunks']"]
+
+
 def test_config_remaps_tree_diagnostic_severity():
     root = TraceSpan(
         span_id="root",
@@ -61,3 +79,42 @@ def test_config_remaps_tree_diagnostic_severity():
 
     assert diagnostics[0].failure_type == FailureType.AGENT_LOOP
     assert diagnostics[0].severity == "WARNING"
+
+
+def test_engine_uses_configured_extraction_mapping_for_drifted_prompt_schema():
+    filler = "schema drift context " * 120
+    fact = "SERVICE_TIER = platinum"
+    span = TraceSpan(
+        span_id="llm",
+        parent_id=None,
+        name="genai-call",
+        span_type=SpanType.LLM,
+        start_time_ms=0,
+        end_time_ms=1,
+        attributes={
+            "gen_ai.prompt_text": f"{filler}{fact}{filler}",
+            "custom_retriever.chunks": [{"id": "doc_custom", "content": fact}],
+        },
+    )
+
+    from wdif.config.engine import ExtractionMappings, HeuristicPolicy, WdifConfig
+
+    config = WdifConfig(
+        extraction_mappings=ExtractionMappings(
+            prompt=["$.attributes['gen_ai.prompt_text']"],
+            documents=["$.attributes['custom_retriever.chunks']"],
+        ),
+        heuristics={
+            "LOST_IN_THE_MIDDLE": HeuristicPolicy(options={"min_prompt_tokens": 50}),
+            "CONTEXT_STUFFING": HeuristicPolicy(enabled=False),
+            "RETRIEVER_MISS": HeuristicPolicy(enabled=False),
+            "TOOL_ERROR": HeuristicPolicy(enabled=False),
+            "AGENT_LOOP": HeuristicPolicy(enabled=False),
+            "UNGROUNDED_ANSWER": HeuristicPolicy(enabled=False),
+            "ORPHANED_SPAN_TREE": HeuristicPolicy(enabled=False),
+        },
+    )
+
+    diagnostics = DiagnosticEngine(config=config).analyze([span])
+
+    assert diagnostics[0].failure_type == FailureType.LOST_IN_THE_MIDDLE

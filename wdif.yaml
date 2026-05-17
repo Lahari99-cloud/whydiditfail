@@ -1,6 +1,16 @@
 version: "1.0.0"
 tokenizer: "cl100k_base"
 
+extraction_mappings:
+  # Optional JSONPath-style overrides for framework-specific telemetry drift.
+  # Examples:
+  # prompt: "$.attributes['gen_ai.prompt_text']"
+  # documents: "$.attributes['custom_retriever.chunks']"
+  prompt: []
+  documents: []
+  output_text: []
+  model_name: []
+
 metrics:
   lost_in_the_middle:
     enabled: true

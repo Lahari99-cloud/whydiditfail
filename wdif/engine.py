@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from wdif.config import WdifConfig
+from wdif.extractors import SpanExtractor
 from wdif.heuristics import (
     AgentLoopHeuristic,
     ContextStuffingHeuristic,
@@ -27,7 +28,11 @@ class DiagnosticEngine:
     ):
         self.config = config or WdifConfig.default()
         token_counter = TokenCounter.from_policy(self.config.tokenizer)
-        default_span_heuristics, default_tree_heuristics = self._build_heuristics(token_counter)
+        extractor = SpanExtractor(self.config.extraction_mappings)
+        default_span_heuristics, default_tree_heuristics = self._build_heuristics(
+            token_counter,
+            extractor,
+        )
         self.span_heuristics = default_span_heuristics if span_heuristics is None else span_heuristics
         self.tree_heuristics = default_tree_heuristics if tree_heuristics is None else tree_heuristics
 
@@ -61,7 +66,11 @@ class DiagnosticEngine:
             key=lambda item: (self._severity_rank(item.severity), item.failure_type.value),
         )
 
-    def _build_heuristics(self, token_counter: TokenCounter) -> tuple[list[object], list[object]]:
+    def _build_heuristics(
+        self,
+        token_counter: TokenCounter,
+        extractor: SpanExtractor,
+    ) -> tuple[list[object], list[object]]:
         span_heuristics: list[object] = []
         tree_heuristics: list[object] = []
 
@@ -74,6 +83,7 @@ class DiagnosticEngine:
                     blindspot_start_pct=float(policy.options.get("blindspot_start_pct", 20.0)),
                     blindspot_end_pct=float(policy.options.get("blindspot_end_pct", 80.0)),
                     max_prompt_chars=int(policy.options.get("max_prompt_chars", 100_000)),
+                    extractor=extractor,
                 )
             )
 
@@ -85,6 +95,7 @@ class DiagnosticEngine:
                     max_context_tokens=int(policy.options.get("max_context_tokens", 8192)),
                     warning_ratio=float(policy.options.get("warning_ratio", 0.9)),
                     max_prompt_chars=int(policy.options.get("max_prompt_chars", 100_000)),
+                    extractor=extractor,
                 )
             )
 
@@ -94,6 +105,7 @@ class DiagnosticEngine:
                 RetrieverMissHeuristic(
                     min_documents=int(policy.options.get("min_documents", 1)),
                     min_score=float(policy.options.get("min_score", 0.3)),
+                    extractor=extractor,
                 )
             )
 
@@ -112,7 +124,8 @@ class DiagnosticEngine:
             policy = self.config.policy_for(FailureType.UNGROUNDED_ANSWER.value)
             tree_heuristics.append(
                 UngroundedAnswerHeuristic(
-                    min_answer_chars=int(policy.options.get("min_answer_chars", 80))
+                    min_answer_chars=int(policy.options.get("min_answer_chars", 80)),
+                    extractor=extractor,
                 )
             )
 

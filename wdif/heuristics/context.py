@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wdif.extractors import extract_prompt
+from wdif.extractors import SpanExtractor, extract_prompt
 from wdif.models import FailureDiagnostic, FailureType, SpanType, TraceSpan
 from wdif.tokenization import TokenCounter
 
@@ -14,17 +14,19 @@ class ContextStuffingHeuristic:
         warning_ratio: float = 0.9,
         token_counter: TokenCounter | None = None,
         max_prompt_chars: int = 100_000,
+        extractor: SpanExtractor | None = None,
     ):
         self.max_context_tokens = max_context_tokens
         self.warning_ratio = warning_ratio
         self.tokenizer = token_counter or TokenCounter()
         self.max_prompt_chars = max_prompt_chars
+        self.extractor = extractor
 
     def analyze_span(self, span: TraceSpan) -> FailureDiagnostic | None:
         if span.span_type != SpanType.LLM:
             return None
 
-        prompt = extract_prompt(span)
+        prompt = extract_prompt(span, self.extractor)
         if not prompt:
             return None
 

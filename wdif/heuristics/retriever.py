@@ -1,21 +1,27 @@
 from __future__ import annotations
 
-from wdif.extractors import extract_documents
+from wdif.extractors import SpanExtractor, extract_documents
 from wdif.models import FailureDiagnostic, FailureType, SpanType, TraceSpan
 
 
 class RetrieverMissHeuristic:
     """Flags retriever spans that return too few or low-scoring documents."""
 
-    def __init__(self, min_documents: int = 1, min_score: float = 0.3):
+    def __init__(
+        self,
+        min_documents: int = 1,
+        min_score: float = 0.3,
+        extractor: SpanExtractor | None = None,
+    ):
         self.min_documents = min_documents
         self.min_score = min_score
+        self.extractor = extractor
 
     def analyze_span(self, span: TraceSpan) -> FailureDiagnostic | None:
         if span.span_type != SpanType.RETRIEVER:
             return None
 
-        documents = extract_documents(span)
+        documents = extract_documents(span, self.extractor)
         if len(documents) < self.min_documents:
             return FailureDiagnostic(
                 failure_type=FailureType.RETRIEVER_MISS,
