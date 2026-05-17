@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from wdif.causal import annotate_causal_graph
 from wdif.config import WdifConfig
 from wdif.extractors import SpanExtractor
 from wdif.heuristics import (
@@ -68,7 +69,9 @@ class DiagnosticEngine:
                             self._apply_policy(self._with_span_identity(diagnostic, span))
                         )
 
-        return rank_diagnostics(diagnostics)
+        ranked = rank_diagnostics(diagnostics)
+        causal = annotate_causal_graph(roots, ranked)
+        return rank_diagnostics(causal)
 
     def _build_heuristics(
         self,

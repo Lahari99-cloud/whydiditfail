@@ -145,3 +145,54 @@ def test_ungrounded_answer_detects_missing_evidence():
 
     assert diagnostic is not None
     assert diagnostic.failure_type == FailureType.UNGROUNDED_ANSWER
+
+
+def test_engine_annotates_causal_failure_propagation():
+    root = TraceSpan(
+        span_id="root",
+        parent_id=None,
+        name="chain",
+        span_type=SpanType.CHAIN,
+        start_time_ms=0,
+        end_time_ms=100,
+        trace_id="trace-causal",
+    )
+    retriever = TraceSpan(
+        span_id="retriever",
+        parent_id="root",
+        name="search",
+        span_type=SpanType.RETRIEVER,
+        start_time_ms=10,
+        end_time_ms=20,
+        trace_id="trace-causal",
+        output_data={"documents": []},
+    )
+    llm = TraceSpan(
+        span_id="llm",
+        parent_id="root",
+        name="answer",
+        span_type=SpanType.LLM,
+        start_time_ms=30,
+        end_time_ms=60,
+        trace_id="trace-causal",
+        output_data={
+            "value": (
+                "PremiumEnterpriseRefunds are available after 90 days through "
+                "the PlatinumSuccessGuarantee for ContosoEnterpriseAccounts."
+            )
+        },
+    )
+    root.children = [retriever, llm]
+
+    diagnostics = DiagnosticEngine().analyze([root])
+    retriever_diag = next(item for item in diagnostics if item.failure_type == FailureType.RETRIEVER_MISS)
+    answer_diag = next(item for item in diagnostics if item.failure_type == FailureType.UNGROUNDED_ANSWER)
+
+    assert retriever_diag.metadata["causal_role"] == "primary_root_cause"
+    assert "UNGROUNDED_ANSWER" in retriever_diag.metadata["causal_downstream_failure_types"]
+    assert answer_diag.metadata["causal_role"] == "downstream_effect"
+    assert answer_diag.metadata["causal_chain"] == [
+        "RETRIEVER_MISS@retriever",
+        "UNGROUNDED_ANSWER@llm",
+    ]
+    assert any("Causal propagation evidence" in item for item in answer_diag.contributing_factors)

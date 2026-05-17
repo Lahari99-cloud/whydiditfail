@@ -48,6 +48,8 @@ def render_markdown_report(
                 f"- Span: `{diagnostic.target_span_id}`",
                 f"- Confidence: `{diagnostic.confidence_score:.3f}`",
                 f"- Contributing factors: `{diagnostic.to_dict()['contributing_factors']}`",
+                f"- Causal role: `{diagnostic.metadata.get('causal_role', 'isolated')}`",
+                f"- Causal chain: `{diagnostic.metadata.get('causal_chain', [])}`",
                 f"- Diagnosis: {diagnostic.message}",
                 f"- Suggested fix: {diagnostic.suggested_fix}",
                 f"- Metadata: `{diagnostic_dict['metadata']}`",

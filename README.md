@@ -282,6 +282,7 @@ The production ingestion path includes explicit safeguards for common enterprise
 - **Schema drift mapping**: `extraction_mappings` lets teams point prompt, document, output, and model fields at custom OpenTelemetry/GenAI layouts.
 - **Tokenizer routing**: `tokenizer_routes` selects per-span tokenizers from model metadata and marks fallback geometry explicitly.
 - **RCA ranking**: diagnostics include deterministic confidence scores, contributing evidence, and co-occurring failure context.
+- **Causal graph analysis**: ranked findings are annotated with upstream/downstream roles, propagation depth, and causal chains.
 - **Orphan detection**: unresolved child spans emit `ORPHANED_SPAN_TREE` diagnostics instead of silently becoming clean roots.
 - **Dead-letter queue**: malformed JSON rows are written to a `.corrupted.log` file and valid rows continue processing.
 - **DLQ policy exits**: set `ingestion.fail_on_dead_letters: true` and map `dead_letter_severity` through `exit_codes`.
