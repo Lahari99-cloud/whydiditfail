@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: |
+          pip install -e .
+          pip install pytest pytest-cov
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Compile check
+        run: python -m compileall wdif tests benchmarks generate_production_logs.py generate_chaos_logs.py test_company_pipeline.py
+      - name: Run production chaos stream
+        run: |
+          python generate_chaos_logs.py
+          wdif stream chaos_dirty_stream.jsonl --dlq chaos.corrupted.log --json

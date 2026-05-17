@@ -1,0 +1,87 @@
+{
+  "resourceSpans": [
+    {
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "spanId": "trace_root",
+              "name": "customer_support_agent",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "CHAIN" }
+                }
+              ],
+              "startTimeUnixNano": "1710000000000000000",
+              "endTimeUnixNano": "1710000005000000000"
+            },
+            {
+              "spanId": "retriever_span",
+              "parentSpanId": "trace_root",
+              "name": "knowledge_base_retriever",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "RETRIEVER" }
+                },
+                {
+                  "key": "retrieval.documents.0.content",
+                  "value": { "stringValue": "Refunds are available within 30 days for unused subscriptions." }
+                },
+                {
+                  "key": "retrieval.documents.0.score",
+                  "value": { "doubleValue": 0.18 }
+                }
+              ],
+              "startTimeUnixNano": "1710000000100000000",
+              "endTimeUnixNano": "1710000000200000000"
+            },
+            {
+              "spanId": "llm_span",
+              "parentSpanId": "trace_root",
+              "name": "final_answer",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "LLM" }
+                },
+                {
+                  "key": "input.value",
+                  "value": { "stringValue": "System: answer using retrieved policy.\nUser: Can I get a refund after 90 days?" }
+                },
+                {
+                  "key": "output.value",
+                  "value": { "stringValue": "Yes. Premium enterprise accounts receive refunds after 90 days under the Platinum Success Guarantee." }
+                }
+              ],
+              "startTimeUnixNano": "1710000000300000000",
+              "endTimeUnixNano": "1710000004000000000"
+            },
+            {
+              "spanId": "tool_error_span",
+              "parentSpanId": "trace_root",
+              "name": "crm_lookup",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "TOOL" }
+                },
+                {
+                  "key": "status.code",
+                  "value": { "stringValue": "ERROR" }
+                },
+                {
+                  "key": "exception.message",
+                  "value": { "stringValue": "CRM request timed out." }
+                }
+              ],
+              "startTimeUnixNano": "1710000004100000000",
+              "endTimeUnixNano": "1710000004500000000"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

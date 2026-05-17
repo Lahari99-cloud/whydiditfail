@@ -1,0 +1,91 @@
+{
+  "spans": [
+    {
+      "span_id": "root_001",
+      "name": "rag_pipeline",
+      "attributes": {
+        "openinference.span.kind": "CHAIN"
+      },
+      "start_time_ms": 0,
+      "end_time_ms": 250
+    },
+    {
+      "span_id": "retriever_001",
+      "parent_id": "root_001",
+      "name": "vector_search",
+      "attributes": {
+        "openinference.span.kind": "RETRIEVER"
+      },
+      "output": {
+        "documents": []
+      },
+      "start_time_ms": 10,
+      "end_time_ms": 25
+    },
+    {
+      "span_id": "tool_001",
+      "parent_id": "root_001",
+      "name": "search_web",
+      "attributes": {
+        "openinference.span.kind": "TOOL"
+      },
+      "input": {
+        "query": "status MATCH_SUCCESSFUL"
+      },
+      "start_time_ms": 26,
+      "end_time_ms": 40
+    },
+    {
+      "span_id": "tool_002",
+      "parent_id": "root_001",
+      "name": "search_web",
+      "attributes": {
+        "openinference.span.kind": "TOOL"
+      },
+      "input": {
+        "query": "status MATCH_SUCCESSFUL"
+      },
+      "start_time_ms": 41,
+      "end_time_ms": 55
+    },
+    {
+      "span_id": "tool_003",
+      "parent_id": "root_001",
+      "name": "search_web",
+      "attributes": {
+        "openinference.span.kind": "TOOL"
+      },
+      "input": {
+        "query": "status MATCH_SUCCESSFUL"
+      },
+      "start_time_ms": 56,
+      "end_time_ms": 70
+    },
+    {
+      "span_id": "tool_004",
+      "parent_id": "root_001",
+      "name": "search_web",
+      "attributes": {
+        "openinference.span.kind": "TOOL"
+      },
+      "input": {
+        "query": "status MATCH_SUCCESSFUL"
+      },
+      "start_time_ms": 71,
+      "end_time_ms": 85
+    },
+    {
+      "span_id": "tool_005",
+      "parent_id": "root_001",
+      "name": "search_web",
+      "attributes": {
+        "openinference.span.kind": "TOOL"
+      },
+      "input": {
+        "query": "status MATCH_SUCCESSFUL"
+      },
+      "start_time_ms": 86,
+      "end_time_ms": 100
+    }
+  ]
+}

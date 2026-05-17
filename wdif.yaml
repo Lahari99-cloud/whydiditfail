@@ -1,0 +1,48 @@
+version: "1.0.0"
+tokenizer: "cl100k_base"
+
+metrics:
+  lost_in_the_middle:
+    enabled: true
+    context_threshold_tokens: 4000
+    blindspot_zone: [20.0, 80.0]
+    severity: "WARNING"
+
+  agent_loop:
+    enabled: true
+    max_consecutive_repeats: 5
+    severity: "CRITICAL"
+
+  context_stuffing:
+    enabled: true
+    max_token_budget: 8192
+    severity: "CRITICAL"
+
+  retriever_miss:
+    enabled: true
+    min_documents: 1
+    min_score: 0.3
+    severity: "CRITICAL"
+
+  tool_error:
+    enabled: true
+    severity: "CRITICAL"
+
+  ungrounded_answer:
+    enabled: true
+    min_answer_chars: 80
+    severity: "WARNING"
+
+  orphaned_span_tree:
+    enabled: true
+    severity: "WARNING"
+
+ingestion:
+  dead_letter_severity: "WARNING"
+  fail_on_dead_letters: true
+  max_context_bomb_characters: 100000
+
+exit_codes:
+  CRITICAL: 1
+  WARNING: 0
+  INFO: 0

@@ -1,0 +1,20 @@
+name: WhyDidItFail
+description: Diagnose LLM, RAG, and agent trace failures in CI.
+inputs:
+  trace_path:
+    description: Directory or JSON file containing trace dumps.
+    required: true
+  config:
+    description: Optional wdif.yaml policy config path.
+    required: false
+  fail_on_critical:
+    description: Fail the workflow when critical diagnostics are found.
+    required: false
+    default: "true"
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.trace_path }}
+    - ${{ inputs.config }}
+    - ${{ inputs.fail_on_critical }}
