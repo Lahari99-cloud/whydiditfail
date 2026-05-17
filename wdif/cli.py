@@ -15,6 +15,7 @@ from wdif.engine import DiagnosticEngine
 from wdif.export import render_aggregate_html
 from wdif.ingestion import DeadLetterQueue, TraceStagingBuffer, read_json_stream
 from wdif.parser import OpenInferenceParser
+from wdif.realtime import watch_file
 from wdif.report import render_html_report, render_markdown_report
 
 app = typer.Typer(help="Diagnose LLM, RAG, and agent failures from local trace JSON.")
@@ -156,6 +157,69 @@ def stream(
     if policy_exit:
         diagnostic_exit = config.exit_code_for({diagnostic.severity for diagnostic in all_diagnostics})
         ingestion_exit = config.ingestion_exit_code(dead_letter_count)
+        raise typer.Exit(max(diagnostic_exit, ingestion_exit))
+
+
+@app.command()
+def watch(
+    trace_file: Path = typer.Argument(..., help="JSONL file to tail for live telemetry."),
+    config_file: Optional[Path] = typer.Option(None, "--config", "-c", exists=True, readable=True),
+    dlq: Optional[Path] = typer.Option(None, "--dlq", help="Write malformed JSON lines to this file."),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable watch summary on exit."),
+    flush_after_seconds: float = typer.Option(2.0, "--flush-after", min=0.1),
+    poll_interval_seconds: float = typer.Option(0.25, "--poll-interval", min=0.05),
+    max_seconds: Optional[float] = typer.Option(None, "--max-seconds", min=0.1),
+    start_at_end: bool = typer.Option(False, "--start-at-end", help="Only process lines appended after startup."),
+    policy_exit: bool = typer.Option(False, "--policy-exit", help="Use configured severity and ingestion exit codes."),
+):
+    """Tail a JSONL file and analyze traces as spans arrive in near real time."""
+
+    config = _load_config_or_exit(config_file)
+    stats = watch_file(
+        trace_file=trace_file,
+        config_path=config_file,
+        dlq_path=dlq,
+        flush_after_seconds=flush_after_seconds,
+        poll_interval_seconds=poll_interval_seconds,
+        max_seconds=max_seconds,
+        start_at_end=start_at_end,
+    )
+
+    if json_output:
+        console.print_json(data=stats.to_dict())
+    else:
+        console.print(
+            Panel(
+                f"[bold]Lines read:[/bold] {stats.lines_read}\n"
+                f"[bold]Spans seen:[/bold] {stats.spans_seen}\n"
+                f"[bold]Traces flushed:[/bold] {stats.traces_flushed}\n"
+                f"[bold]Dead letters:[/bold] {stats.dead_letter_count}\n"
+                f"[bold]Diagnostics:[/bold] {len(stats.diagnostics)}",
+                title="WhyDidItFail Watch",
+                border_style="cyan",
+            )
+        )
+        if stats.diagnostics:
+            table = Table(show_header=True, header_style="bold")
+            table.add_column("Severity")
+            table.add_column("Failure")
+            table.add_column("Trace")
+            table.add_column("Span")
+            table.add_column("Diagnosis")
+            for diagnostic in stats.diagnostics:
+                style = "red" if diagnostic.severity == "CRITICAL" else "yellow"
+                table.add_row(
+                    f"[{style}]{diagnostic.severity}[/{style}]",
+                    diagnostic.failure_type.value,
+                    diagnostic.trace_id or "",
+                    diagnostic.target_span_id,
+                    diagnostic.message,
+                )
+            console.print(table)
+
+    if policy_exit:
+        diagnostic_exit = config.exit_code_for({diagnostic.severity for diagnostic in stats.diagnostics})
+        ingestion_exit = config.ingestion_exit_code(stats.dead_letter_count)
         raise typer.Exit(max(diagnostic_exit, ingestion_exit))
 
 

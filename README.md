@@ -173,6 +173,12 @@ Stream large JSON/JSONL trace collections:
 wdif stream traces.jsonl --json --dlq traces.corrupted.log
 ```
 
+Tail a live JSONL trace file and flush staged traces after a short idle window:
+
+```bash
+wdif watch traces/live.jsonl --flush-after 2 --dlq traces.corrupted.log
+```
+
 Group spans split across multiple log files by `trace_id` before analysis:
 
 ```bash
@@ -249,6 +255,7 @@ The production ingestion path includes explicit safeguards for common enterprise
 
 - **Trace identity**: parsed spans and diagnostics preserve `trace_id` where present.
 - **Split-log staging**: `wdif batch --staged` groups spans by `trace_id` across multiple files before analysis.
+- **Live tailing**: `wdif watch` follows appended JSONL spans, stages by `trace_id`, and flushes traces after an idle window.
 - **Orphan detection**: unresolved child spans emit `ORPHANED_SPAN_TREE` diagnostics instead of silently becoming clean roots.
 - **Dead-letter queue**: malformed JSON rows are written to a `.corrupted.log` file and valid rows continue processing.
 - **DLQ policy exits**: set `ingestion.fail_on_dead_letters: true` and map `dead_letter_severity` through `exit_codes`.
