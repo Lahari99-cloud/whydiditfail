@@ -21,6 +21,14 @@ class TokenizerPolicy:
 
 
 @dataclass
+class TokenizerRoute:
+    match: str
+    provider: str = "tiktoken"
+    name: str = "cl100k_base"
+    local_path: str | None = None
+
+
+@dataclass
 class HeuristicPolicy:
     enabled: bool = True
     severity: str | None = None
@@ -48,6 +56,7 @@ class ExtractionMappings:
 class WdifConfig:
     version: str = "1.0.0"
     tokenizer: TokenizerPolicy = field(default_factory=TokenizerPolicy)
+    tokenizer_routes: list[TokenizerRoute] = field(default_factory=list)
     extraction_mappings: ExtractionMappings = field(default_factory=ExtractionMappings)
     heuristics: dict[str, HeuristicPolicy] = field(default_factory=dict)
     ingestion: IngestionPolicy = field(default_factory=IngestionPolicy)
@@ -110,6 +119,13 @@ def validate_config(config: WdifConfig) -> None:
             f"Unsupported tokenizer provider '{config.tokenizer.provider}'. "
             f"Expected one of: {sorted(allowed_tokenizers)}."
         )
+    for route in config.tokenizer_routes:
+        if not route.match:
+            raise ConfigError("tokenizer_routes entries require a non-empty match value.")
+        if route.provider.lower() not in allowed_tokenizers:
+            raise ConfigError(
+                f"Unsupported tokenizer route provider '{route.provider}' for match '{route.match}'."
+            )
 
     if config.concurrency is not None and int(config.concurrency) < 1:
         raise ConfigError("concurrency must be >= 1.")
@@ -190,6 +206,7 @@ def _load_mapping(path: Path) -> dict[str, Any]:
 
 def _config_from_mapping(raw: dict[str, Any]) -> WdifConfig:
     tokenizer = _tokenizer_from_raw(raw.get("tokenizer", {}))
+    tokenizer_routes = _tokenizer_routes_from_raw(raw.get("tokenizer_routes", []))
     extraction_mappings = _extraction_mappings_from_raw(raw.get("extraction_mappings", {}))
 
     heuristics_raw = _normalize_heuristics(raw)
@@ -233,12 +250,36 @@ def _config_from_mapping(raw: dict[str, Any]) -> WdifConfig:
     return WdifConfig(
         version=str(raw.get("version", "1.0.0")),
         tokenizer=tokenizer,
+        tokenizer_routes=tokenizer_routes,
         extraction_mappings=extraction_mappings,
         heuristics=heuristics,
         ingestion=ingestion,
         exit_codes=exit_codes,
         concurrency=raw.get("concurrency"),
     )
+
+
+def _tokenizer_routes_from_raw(raw: Any) -> list[TokenizerRoute]:
+    routes = []
+    if isinstance(raw, dict):
+        iterable = [{"match": key, **(value if isinstance(value, dict) else {})} for key, value in raw.items()]
+    elif isinstance(raw, list):
+        iterable = raw
+    else:
+        iterable = []
+
+    for item in iterable:
+        if not isinstance(item, dict):
+            continue
+        routes.append(
+            TokenizerRoute(
+                match=str(item.get("match", "")),
+                provider=str(item.get("provider", "tiktoken")),
+                name=str(item.get("name", "cl100k_base")),
+                local_path=item.get("local_path"),
+            )
+        )
+    return routes
 
 
 def _extraction_mappings_from_raw(raw: Any) -> ExtractionMappings:

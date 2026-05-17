@@ -14,7 +14,8 @@ from wdif.heuristics import (
     UngroundedAnswerHeuristic,
 )
 from wdif.models import FailureDiagnostic, FailureType, TraceSpan
-from wdif.tokenization import TokenCounter
+from wdif.ranking import SEVERITY_RANK, rank_diagnostics
+from wdif.tokenization import TokenCounter, TokenizerRegistry
 
 
 class DiagnosticEngine:
@@ -29,9 +30,15 @@ class DiagnosticEngine:
         self.config = config or WdifConfig.default()
         token_counter = TokenCounter.from_policy(self.config.tokenizer)
         extractor = SpanExtractor(self.config.extraction_mappings)
+        tokenizer_registry = TokenizerRegistry(
+            default_policy=self.config.tokenizer,
+            routes=self.config.tokenizer_routes,
+            extractor=extractor,
+        )
         default_span_heuristics, default_tree_heuristics = self._build_heuristics(
             token_counter,
             extractor,
+            tokenizer_registry,
         )
         self.span_heuristics = default_span_heuristics if span_heuristics is None else span_heuristics
         self.tree_heuristics = default_tree_heuristics if tree_heuristics is None else tree_heuristics
@@ -61,15 +68,13 @@ class DiagnosticEngine:
                             self._apply_policy(self._with_span_identity(diagnostic, span))
                         )
 
-        return sorted(
-            diagnostics,
-            key=lambda item: (self._severity_rank(item.severity), item.failure_type.value),
-        )
+        return rank_diagnostics(diagnostics)
 
     def _build_heuristics(
         self,
         token_counter: TokenCounter,
         extractor: SpanExtractor,
+        tokenizer_registry: TokenizerRegistry,
     ) -> tuple[list[object], list[object]]:
         span_heuristics: list[object] = []
         tree_heuristics: list[object] = []
@@ -84,6 +89,7 @@ class DiagnosticEngine:
                     blindspot_end_pct=float(policy.options.get("blindspot_end_pct", 80.0)),
                     max_prompt_chars=int(policy.options.get("max_prompt_chars", 100_000)),
                     extractor=extractor,
+                    tokenizer_registry=tokenizer_registry,
                 )
             )
 
@@ -96,6 +102,7 @@ class DiagnosticEngine:
                     warning_ratio=float(policy.options.get("warning_ratio", 0.9)),
                     max_prompt_chars=int(policy.options.get("max_prompt_chars", 100_000)),
                     extractor=extractor,
+                    tokenizer_registry=tokenizer_registry,
                 )
             )
 
@@ -151,4 +158,4 @@ class DiagnosticEngine:
 
     @staticmethod
     def _severity_rank(severity: str) -> int:
-        return {"CRITICAL": 0, "WARNING": 1, "INFO": 2}.get(severity, 9)
+        return SEVERITY_RANK.get(severity, 9)

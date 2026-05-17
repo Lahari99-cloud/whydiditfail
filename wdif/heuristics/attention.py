@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from wdif.extractors import SpanExtractor, extract_documents, extract_prompt
 from wdif.models import FailureDiagnostic, FailureType, SpanType, TraceSpan
-from wdif.tokenization import TokenCounter
+from wdif.tokenization import TokenCounter, TokenizerRegistry
 
 
 class LostInTheMiddleHeuristic:
@@ -17,6 +17,7 @@ class LostInTheMiddleHeuristic:
         blindspot_end_pct: float = 80.0,
         max_prompt_chars: int = 100_000,
         extractor: SpanExtractor | None = None,
+        tokenizer_registry: TokenizerRegistry | None = None,
     ):
         self.tokenizer = token_counter or TokenCounter(encoding_name)
         self.min_prompt_tokens = min_prompt_tokens
@@ -24,6 +25,7 @@ class LostInTheMiddleHeuristic:
         self.blindspot_end_pct = blindspot_end_pct
         self.max_prompt_chars = max_prompt_chars
         self.extractor = extractor
+        self.tokenizer_registry = tokenizer_registry
 
     def analyze_span(self, span: TraceSpan) -> FailureDiagnostic | None:
         if span.span_type != SpanType.LLM:
@@ -33,7 +35,9 @@ class LostInTheMiddleHeuristic:
         if not prompt:
             return None
 
-        total_tokens = self.tokenizer.count(prompt)
+        token_resolution = self.tokenizer_registry.resolve(span) if self.tokenizer_registry else None
+        tokenizer = token_resolution.counter if token_resolution else self.tokenizer
+        total_tokens = tokenizer.count(prompt)
         if total_tokens < self.min_prompt_tokens:
             return None
 
@@ -48,8 +52,13 @@ class LostInTheMiddleHeuristic:
 
             leading_text = prompt[:start_char_idx]
             chunk_end_char_idx = start_char_idx + len(chunk_text)
-            chunk_start_token = self._estimate_prefix_tokens(prompt, start_char_idx, total_tokens)
-            chunk_tokens = self.tokenizer.count(chunk_text)
+            chunk_start_token = self._estimate_prefix_tokens(
+                tokenizer,
+                prompt,
+                start_char_idx,
+                total_tokens,
+            )
+            chunk_tokens = tokenizer.count(chunk_text)
             chunk_center_token = chunk_start_token + (chunk_tokens // 2)
             position_percentage = (chunk_center_token / total_tokens) * 100
 
@@ -71,6 +80,7 @@ class LostInTheMiddleHeuristic:
                         "token_count_mode": (
                             "estimated" if len(prompt) > self.max_prompt_chars else "exact"
                         ),
+                        **(token_resolution.to_metadata() if token_resolution else {}),
                         "prompt_excerpt": prompt[:4000],
                         "layout_excerpt": self._layout_excerpt(
                             prompt,
@@ -87,9 +97,15 @@ class LostInTheMiddleHeuristic:
 
         return None
 
-    def _estimate_prefix_tokens(self, prompt: str, char_index: int, total_tokens: int) -> int:
+    def _estimate_prefix_tokens(
+        self,
+        tokenizer: TokenCounter,
+        prompt: str,
+        char_index: int,
+        total_tokens: int,
+    ) -> int:
         if len(prompt) <= self.max_prompt_chars:
-            return self.tokenizer.count(prompt[:char_index])
+            return tokenizer.count(prompt[:char_index])
         return int(total_tokens * (char_index / len(prompt)))
 
     @staticmethod

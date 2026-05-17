@@ -188,6 +188,19 @@ extraction_mappings:
   output_text: "$.attributes['gen_ai.response.text']"
 ```
 
+Route tokenizers by model metadata inside mixed-model traces:
+
+```yaml
+tokenizer: "cl100k_base"
+tokenizer_routes:
+  - match: "llama"
+    provider: "huggingface"
+    local_path: "./tokenizers/llama3-tokenizer.json"
+  - match: "mistral"
+    provider: "huggingface"
+    local_path: "./tokenizers/mistral-tokenizer.json"
+```
+
 Group spans split across multiple log files by `trace_id` before analysis:
 
 ```bash
@@ -267,6 +280,8 @@ The production ingestion path includes explicit safeguards for common enterprise
 - **Live tailing**: `wdif watch` follows appended JSONL spans, stages by `trace_id`, and flushes traces after an idle window.
 - **Bounded staging**: long-lived or oversized trace groups spill/flush by configured active trace, span-count, and age limits.
 - **Schema drift mapping**: `extraction_mappings` lets teams point prompt, document, output, and model fields at custom OpenTelemetry/GenAI layouts.
+- **Tokenizer routing**: `tokenizer_routes` selects per-span tokenizers from model metadata and marks fallback geometry explicitly.
+- **RCA ranking**: diagnostics include deterministic confidence scores, contributing evidence, and co-occurring failure context.
 - **Orphan detection**: unresolved child spans emit `ORPHANED_SPAN_TREE` diagnostics instead of silently becoming clean roots.
 - **Dead-letter queue**: malformed JSON rows are written to a `.corrupted.log` file and valid rows continue processing.
 - **DLQ policy exits**: set `ingestion.fail_on_dead_letters: true` and map `dead_letter_severity` through `exit_codes`.

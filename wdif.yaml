@@ -1,6 +1,18 @@
 version: "1.0.0"
 tokenizer: "cl100k_base"
 
+# Optional per-model tokenizer routing. Routes match substrings in model metadata
+# such as attributes.llm.model_name or attributes.gen_ai.request.model.
+# tokenizer_routes:
+#   - match: "llama"
+#     provider: "huggingface"
+#     name: "meta-llama/Meta-Llama-3-8B-Instruct"
+#     local_path: "./tokenizers/llama3-tokenizer.json"
+#   - match: "mistral"
+#     provider: "huggingface"
+#     name: "mistralai/Mistral-7B-Instruct-v0.3"
+tokenizer_routes: []
+
 extraction_mappings:
   # Optional JSONPath-style overrides for framework-specific telemetry drift.
   # Examples:

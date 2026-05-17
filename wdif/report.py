@@ -46,6 +46,8 @@ def render_markdown_report(
                 "",
                 f"- Trace: `{diagnostic.trace_id or '<unknown>'}`",
                 f"- Span: `{diagnostic.target_span_id}`",
+                f"- Confidence: `{diagnostic.confidence_score:.3f}`",
+                f"- Contributing factors: `{diagnostic.to_dict()['contributing_factors']}`",
                 f"- Diagnosis: {diagnostic.message}",
                 f"- Suggested fix: {diagnostic.suggested_fix}",
                 f"- Metadata: `{diagnostic_dict['metadata']}`",

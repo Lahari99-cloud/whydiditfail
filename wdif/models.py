@@ -56,6 +56,8 @@ class FailureDiagnostic:
     target_span_id: str
     message: str
     trace_id: str | None = None
+    confidence_score: float = 0.0
+    contributing_factors: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     suggested_fix: str = ""
 
@@ -67,6 +69,8 @@ class FailureDiagnostic:
             "severity": self.severity,
             "trace_id": self.trace_id,
             "target_span_id": self.target_span_id,
+            "confidence_score": round(float(self.confidence_score), 3),
+            "contributing_factors": sanitize_value(self.contributing_factors),
             "message": self.message,
             "metadata": sanitize_value(self.metadata),
             "suggested_fix": self.suggested_fix,
