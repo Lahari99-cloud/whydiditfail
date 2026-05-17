@@ -31,6 +31,9 @@ class HeuristicPolicy:
 class IngestionPolicy:
     dead_letter_severity: str = "WARNING"
     fail_on_dead_letters: bool = False
+    max_active_traces: int = 10_000
+    max_trace_spans: int = 5_000
+    max_trace_age_seconds: float = 300.0
 
 
 @dataclass
@@ -121,6 +124,14 @@ def validate_config(config: WdifConfig) -> None:
         raise ConfigError(
             f"Invalid ingestion.dead_letter_severity '{config.ingestion.dead_letter_severity}'."
         )
+    _validate_number("ingestion", "max_active_traces", config.ingestion.max_active_traces, minimum=1)
+    _validate_number("ingestion", "max_trace_spans", config.ingestion.max_trace_spans, minimum=1)
+    _validate_number(
+        "ingestion",
+        "max_trace_age_seconds",
+        config.ingestion.max_trace_age_seconds,
+        minimum=0.1,
+    )
 
     for name in allowed_mappings:
         paths = getattr(config.extraction_mappings, name)
@@ -206,6 +217,9 @@ def _config_from_mapping(raw: dict[str, Any]) -> WdifConfig:
     ingestion = IngestionPolicy(
         dead_letter_severity=str(ingestion_raw.get("dead_letter_severity", "WARNING")).upper(),
         fail_on_dead_letters=bool(ingestion_raw.get("fail_on_dead_letters", False)),
+        max_active_traces=int(ingestion_raw.get("max_active_traces", 10_000)),
+        max_trace_spans=int(ingestion_raw.get("max_trace_spans", 5_000)),
+        max_trace_age_seconds=float(ingestion_raw.get("max_trace_age_seconds", 300.0)),
     )
 
     context_bomb_ceiling = ingestion_raw.get("max_context_bomb_characters")

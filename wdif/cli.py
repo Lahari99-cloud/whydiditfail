@@ -120,7 +120,10 @@ def stream(
     all_roots = []
     dead_letter_count = 0
 
-    staging = TraceStagingBuffer()
+    staging = TraceStagingBuffer(
+        max_traces=config.ingestion.max_active_traces,
+        max_spans_per_trace=config.ingestion.max_trace_spans,
+    )
     read_result = read_json_stream(trace_file, DeadLetterQueue(dlq) if dlq else None)
     dead_letter_count += len(read_result.dead_letters)
     staging.extend(read_result.payloads)
@@ -139,6 +142,7 @@ def stream(
             data={
                 "ingestion": {
                     "trace_payloads": len(payloads),
+                    "spilled_trace_count": staging.spilled_trace_count,
                     "dead_letter_count": dead_letter_count,
                     "dlq_path": str(dlq) if dlq else None,
                 },
@@ -193,6 +197,7 @@ def watch(
                 f"[bold]Lines read:[/bold] {stats.lines_read}\n"
                 f"[bold]Spans seen:[/bold] {stats.spans_seen}\n"
                 f"[bold]Traces flushed:[/bold] {stats.traces_flushed}\n"
+                f"[bold]Traces evicted:[/bold] {stats.traces_evicted}\n"
                 f"[bold]Dead letters:[/bold] {stats.dead_letter_count}\n"
                 f"[bold]Diagnostics:[/bold] {len(stats.diagnostics)}",
                 title="WhyDidItFail Watch",

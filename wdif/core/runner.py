@@ -93,10 +93,13 @@ def run_staged_batch(
     """Analyze split JSON/JSONL logs after grouping spans by trace_id across files."""
 
     started = perf_counter()
-    staging = TraceStagingBuffer()
+    config = load_config(config_path)
+    staging = TraceStagingBuffer(
+        max_traces=config.ingestion.max_active_traces,
+        max_spans_per_trace=config.ingestion.max_trace_spans,
+    )
     dlq = DeadLetterQueue(dlq_path) if dlq_path else None
     parser = OpenInferenceParser()
-    config = load_config(config_path)
     engine = DiagnosticEngine(config=config)
     dead_letter_count = 0
 

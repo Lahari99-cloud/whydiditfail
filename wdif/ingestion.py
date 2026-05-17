@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -37,15 +39,26 @@ class DeadLetterQueue:
 class TraceStagingBuffer:
     """Groups spans by trace_id across files before graph construction."""
 
-    def __init__(self, max_traces: int = 10_000):
+    def __init__(
+        self,
+        max_traces: int = 10_000,
+        max_spans_per_trace: int = 5_000,
+        spill_path: Path | None = None,
+    ):
         self.max_traces = max_traces
+        self.max_spans_per_trace = max_spans_per_trace
+        self.spill_path = spill_path
         self._groups: dict[str, list[dict[str, Any]]] = {}
         self._payloads: list[dict[str, Any]] = []
+        self.spilled_trace_count = 0
 
     def add(self, payload: dict[str, Any]) -> None:
         if is_single_span(payload):
             trace_id = str(payload.get("trace_id") or payload.get("traceId") or "__default__")
-            self._groups.setdefault(trace_id, []).append(payload)
+            group = self._groups.setdefault(trace_id, [])
+            group.append(payload)
+            if len(group) >= self.max_spans_per_trace:
+                self._spill_trace(trace_id)
             self._evict_if_needed()
         else:
             self._payloads.append(payload)
@@ -55,7 +68,8 @@ class TraceStagingBuffer:
             self.add(payload)
 
     def flush(self) -> list[dict[str, Any]]:
-        staged = list(self._payloads)
+        staged = self._read_spilled_payloads()
+        staged.extend(self._payloads)
         staged.extend({"spans": spans} for spans in self._groups.values())
         self._groups.clear()
         self._payloads.clear()
@@ -64,7 +78,38 @@ class TraceStagingBuffer:
     def _evict_if_needed(self) -> None:
         while len(self._groups) > self.max_traces:
             oldest_key = next(iter(self._groups))
-            self._payloads.append({"spans": self._groups.pop(oldest_key)})
+            self._spill_trace(oldest_key)
+
+    def _spill_trace(self, trace_id: str) -> None:
+        spans = self._groups.pop(trace_id, None)
+        if not spans:
+            return
+        if self.spill_path is None:
+            fd, name = tempfile.mkstemp(prefix="wdif_trace_spill_", suffix=".jsonl")
+            os.close(fd)
+            self.spill_path = Path(name)
+        self.spill_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.spill_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"spans": spans}) + "\n")
+        self.spilled_trace_count += 1
+
+    def _read_spilled_payloads(self) -> list[dict[str, Any]]:
+        if self.spill_path is None or not self.spill_path.exists():
+            return []
+        payloads: list[dict[str, Any]] = []
+        with self.spill_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    payload = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(payload, dict):
+                    payloads.append(payload)
+        self.spill_path.unlink(missing_ok=True)
+        self.spill_path = None
+        return payloads
 
 
 def read_json_stream(

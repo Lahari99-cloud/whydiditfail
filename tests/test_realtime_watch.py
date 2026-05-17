@@ -4,8 +4,9 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from wdif.cli import app
+from wdif.config.engine import IngestionPolicy, WdifConfig
 from wdif.models import FailureType
-from wdif.realtime import watch_file
+from wdif.realtime import LiveTraceWatcher, watch_file
 
 
 runner = CliRunner()
@@ -79,3 +80,27 @@ def test_watch_cli_outputs_json_summary(tmp_path: Path):
     assert result.exit_code == 0
     assert '"lines_read": 1' in result.output
     assert '"traces_flushed": 1' in result.output
+
+
+def test_watch_evicts_trace_that_exceeds_span_bound(tmp_path: Path):
+    trace_file = tmp_path / "live.jsonl"
+    trace_file.write_text("", encoding="utf-8")
+    config = WdifConfig(ingestion=IngestionPolicy(max_trace_spans=2))
+    watcher = LiveTraceWatcher(
+        trace_file,
+        config=config,
+        flush_after_seconds=30.0,
+        poll_interval_seconds=0.05,
+    )
+
+    trace_file.write_text(
+        json.dumps({"id": "span-1", "trace_id": "oversized", "name": "tool"})
+        + "\n"
+        + json.dumps({"id": "span-2", "trace_id": "oversized", "name": "tool"})
+        + "\n",
+        encoding="utf-8",
+    )
+    stats = watcher.watch(max_seconds=0.15)
+
+    assert stats.traces_evicted == 1
+    assert stats.traces_flushed == 2

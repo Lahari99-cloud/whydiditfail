@@ -51,6 +51,9 @@ ingestion:
   dead_letter_severity: "WARNING"
   fail_on_dead_letters: true
   max_context_bomb_characters: 100000
+  max_active_traces: 10000
+  max_trace_spans: 5000
+  max_trace_age_seconds: 300
 
 exit_codes:
   CRITICAL: 1

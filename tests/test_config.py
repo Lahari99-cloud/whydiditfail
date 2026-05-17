@@ -28,6 +28,25 @@ heuristics:
     assert config.exit_code_for({"CRITICAL"}) == 1
 
 
+def test_loads_ingestion_memory_bounds(tmp_path):
+    config_file = tmp_path / "wdif.yaml"
+    config_file.write_text(
+        """
+ingestion:
+  max_active_traces: 25
+  max_trace_spans: 100
+  max_trace_age_seconds: 30
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_file)
+
+    assert config.ingestion.max_active_traces == 25
+    assert config.ingestion.max_trace_spans == 100
+    assert config.ingestion.max_trace_age_seconds == 30
+
+
 def test_loads_extraction_mappings_from_yaml(tmp_path):
     config_file = tmp_path / "wdif.yaml"
     config_file.write_text(

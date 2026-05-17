@@ -18,6 +18,7 @@ class WatchStats:
     lines_read: int = 0
     payloads_seen: int = 0
     traces_flushed: int = 0
+    traces_evicted: int = 0
     spans_seen: int = 0
     dead_letter_count: int = 0
     diagnostics: list[FailureDiagnostic] = field(default_factory=list)
@@ -27,6 +28,7 @@ class WatchStats:
             "lines_read": self.lines_read,
             "payloads_seen": self.payloads_seen,
             "traces_flushed": self.traces_flushed,
+            "traces_evicted": self.traces_evicted,
             "spans_seen": self.spans_seen,
             "dead_letter_count": self.dead_letter_count,
             "diagnostics": [diagnostic.to_dict() for diagnostic in self.diagnostics],
@@ -49,9 +51,13 @@ class LiveTraceWatcher:
         self.dlq = DeadLetterQueue(dlq_path) if dlq_path else None
         self.flush_after_seconds = flush_after_seconds
         self.poll_interval_seconds = poll_interval_seconds
+        self.max_active_traces = self.config.ingestion.max_active_traces
+        self.max_trace_spans = self.config.ingestion.max_trace_spans
+        self.max_trace_age_seconds = self.config.ingestion.max_trace_age_seconds
         self.parser = OpenInferenceParser()
         self.engine = DiagnosticEngine(config=self.config)
         self._staged: dict[str, list[dict[str, Any]]] = {}
+        self._first_seen: dict[str, float] = {}
         self._last_seen: dict[str, float] = {}
         self._payloads: list[dict[str, Any]] = []
 
@@ -79,7 +85,7 @@ class LiveTraceWatcher:
                     offset = handle.tell()
                     self._process_line(line, stats, now)
 
-            diagnostics = self._flush_idle(stats, now)
+            diagnostics = self._flush_bounded(stats, now)
             if diagnostics and on_diagnostics:
                 on_diagnostics(diagnostics)
 
@@ -126,21 +132,41 @@ class LiveTraceWatcher:
         if is_single_span(payload):
             trace_id = str(payload.get("trace_id") or payload.get("traceId") or "__default__")
             self._staged.setdefault(trace_id, []).append(payload)
+            self._first_seen.setdefault(trace_id, now)
             self._last_seen[trace_id] = now
             stats.spans_seen += 1
         else:
             self._payloads.append(payload)
 
-    def _flush_idle(self, stats: WatchStats, now: float) -> list[FailureDiagnostic]:
+    def _flush_bounded(self, stats: WatchStats, now: float) -> list[FailureDiagnostic]:
         diagnostics: list[FailureDiagnostic] = []
-        ready = [
-            trace_id
-            for trace_id, last_seen in self._last_seen.items()
-            if now - last_seen >= self.flush_after_seconds
-        ]
-        for trace_id in ready:
-            payload = {"spans": self._staged.pop(trace_id)}
+        ready_reasons: dict[str, str] = {}
+        for trace_id, last_seen in self._last_seen.items():
+            if now - last_seen >= self.flush_after_seconds:
+                ready_reasons[trace_id] = "idle"
+        for trace_id, first_seen in self._first_seen.items():
+            if now - first_seen >= self.max_trace_age_seconds:
+                ready_reasons.setdefault(trace_id, "age")
+        for trace_id, spans in self._staged.items():
+            if len(spans) >= self.max_trace_spans:
+                ready_reasons.setdefault(trace_id, "span_count")
+
+        while len(self._staged) - len(ready_reasons) > self.max_active_traces:
+            oldest = min(
+                (trace_id for trace_id in self._staged if trace_id not in ready_reasons),
+                key=lambda trace_id: self._first_seen.get(trace_id, now),
+            )
+            ready_reasons[oldest] = "active_trace_limit"
+
+        for trace_id, reason in ready_reasons.items():
+            spans = self._staged.pop(trace_id, None)
+            if not spans:
+                continue
+            payload = {"spans": spans}
+            self._first_seen.pop(trace_id, None)
             self._last_seen.pop(trace_id, None)
+            if reason != "idle":
+                stats.traces_evicted += 1
             diagnostics.extend(self._analyze_payload(payload, stats))
 
         if self._payloads:
@@ -156,6 +182,7 @@ class LiveTraceWatcher:
         diagnostics: list[FailureDiagnostic] = []
         for trace_id in list(self._staged):
             payload = {"spans": self._staged.pop(trace_id)}
+            self._first_seen.pop(trace_id, None)
             self._last_seen.pop(trace_id, None)
             diagnostics.extend(self._analyze_payload(payload, stats))
         for payload in self._payloads:

@@ -1,4 +1,5 @@
 from wdif.config.engine import (
+    ExtractionMappings,
     HeuristicPolicy,
     IngestionPolicy,
     TokenizerPolicy,
@@ -11,6 +12,7 @@ from wdif.config.engine import (
 
 __all__ = [
     "HeuristicPolicy",
+    "ExtractionMappings",
     "IngestionPolicy",
     "TokenizerPolicy",
     "WdifConfig",

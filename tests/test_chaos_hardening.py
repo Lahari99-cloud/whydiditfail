@@ -54,3 +54,26 @@ def test_split_logs_are_staged_across_files(tmp_path: Path):
     result = run_staged_batch([child, parent])
 
     assert result.span_count == 2
+
+
+def test_staging_buffer_spills_oversized_trace_to_disk(tmp_path: Path):
+    spill = tmp_path / "trace_spill.jsonl"
+    staging = TraceStagingBuffer(max_spans_per_trace=2, spill_path=spill)
+
+    staging.add({"id": "span-1", "trace_id": "huge-trace", "name": "tool"})
+    staging.add({"id": "span-2", "trace_id": "huge-trace", "name": "tool"})
+
+    assert staging.spilled_trace_count == 1
+    assert spill.exists()
+
+    payloads = staging.flush()
+
+    assert payloads == [
+        {
+            "spans": [
+                {"id": "span-1", "trace_id": "huge-trace", "name": "tool"},
+                {"id": "span-2", "trace_id": "huge-trace", "name": "tool"},
+            ]
+        }
+    ]
+    assert not spill.exists()
