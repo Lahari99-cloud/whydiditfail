@@ -48,6 +48,40 @@ class TraceSpan:
             spans.extend(child.walk())
         return spans
 
+    def to_snapshot(self) -> dict[str, Any]:
+        """Serialize a span tree deterministically for replay snapshots."""
+        return {
+            "span_id": self.span_id,
+            "parent_id": self.parent_id,
+            "name": self.name,
+            "span_type": self.span_type.value,
+            "start_time_ms": self.start_time_ms,
+            "end_time_ms": self.end_time_ms,
+            "trace_id": self.trace_id,
+            "input_data": self.input_data,
+            "output_data": self.output_data,
+            "attributes": self.attributes,
+            "children": [child.to_snapshot() for child in self.children],
+        }
+
+    @classmethod
+    def from_snapshot(cls, data: dict[str, Any]) -> "TraceSpan":
+        """Deserialize a replay snapshot span without lossy conversion."""
+        span = cls(
+            span_id=str(data["span_id"]),
+            parent_id=data.get("parent_id"),
+            name=str(data.get("name", "unnamed_span")),
+            span_type=SpanType(str(data.get("span_type", SpanType.UNKNOWN.value))),
+            start_time_ms=int(data.get("start_time_ms", 0)),
+            end_time_ms=int(data.get("end_time_ms", 0)),
+            trace_id=data.get("trace_id"),
+            input_data=dict(data.get("input_data", {})),
+            output_data=dict(data.get("output_data", {})),
+            attributes=dict(data.get("attributes", {})),
+        )
+        span.children = [cls.from_snapshot(child) for child in data.get("children", [])]
+        return span
+
 
 @dataclass
 class FailureDiagnostic:
