@@ -4,15 +4,18 @@
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Built with: Rich](https://img.shields.io/badge/Built%20with-Rich-purple.svg)](https://github.com/Textualize/rich)
 
-Stop burning money on GPT-4 judges. Diagnose production LLM, RAG, and agent failures locally on your CPU for exactly $0.
+Deterministic causal diagnostics and replayable evidence snapshots for production LLM, RAG, and agent failures, running locally on your CPU for exactly $0 in API calls.
 
-**WhyDidItFail** is a framework-agnostic CLI and diagnostic engine for AI traces. It ingests OpenInference/OpenTelemetry-style JSON, reconstructs execution trees, normalizes prompts, documents, tool outputs, and status metadata, then runs deterministic heuristics that explain why an LLM, RAG pipeline, or agent failed.
+**WhyDidItFail** is deterministic causal diagnostics infrastructure for production agentic systems. It ingests OpenInference/OpenTelemetry-style JSON, reconstructs execution trees, ranks structural root causes, captures immutable `.wdif` evidence snapshots, and replays RCA output later with SHA-256 integrity and determinism-manifest validation.
 
 ## Quickstart
 
 ```bash
 pip install whydiditfail
 wdif analyze examples/sample_trace.json --json
+wdif snapshot examples/openinference_trace.json --output reports/openinference_trace.wdif
+wdif replay reports/openinference_trace.wdif
+wdif diff reports/before.wdif reports/after.wdif
 ```
 
 Local development:
@@ -36,24 +39,45 @@ Recent local runs on a 100,000-span synthetic trace land in the 37k-40k logs/sec
 ```
 
 ```text
-+-----------------------------------------------------------+
-| PRODUCTION TRACE STREAM                                   |
-| OpenInference / OTel JSON, JSONL, split collector logs     |
-+-----------------------------+-----------------------------+
-                              |
-                              | Local CPU ingestion
-                              v
-+-----------------------------------------------------------+
-| WhyDidItFail ENGINE                                       |
-| Parser | DLQ | Trace staging | Heuristics | Redaction     |
-+-----------------------------+-----------------------------+
-                              |
-                              | Policy-routed diagnostics
-                              v
-+-----------------------------------------------------------+
-| CI/CD POLICY GATE + PR REMEDIATION                        |
-| JSON | Markdown/HTML | Docker Action | Git-style diffs     |
-+-----------------------------------------------------------+
++--------------------------------------------------------------+
+| PRODUCTION TRACE STREAM                                      |
+| OpenInference / OTel JSON, JSONL, split collector logs        |
++-------------------------------+------------------------------+
+                                |
+                                | Local CPU ingestion
+                                v
++--------------------------------------------------------------+
+| WDIF CAUSAL DIAGNOSTIC ENGINE                                |
+| Parser | DLQ | bounded staging | heuristics | RCA ranking     |
++-------------------------------+------------------------------+
+                                |
+                                | Deterministic causal findings
+                                v
++--------------------------------------------------------------+
+| EVIDENCE SNAPSHOT (.wdif)                                    |
+| Span tree | diagnostics | config | determinism manifest       |
+| SHA-256 snapshot hash | normalization/ranking/diagnostic hash |
++-------------------------------+------------------------------+
+                                |
+                                | Replay and diff
+                                v
++--------------------------------------------------------------+
+| RELIABILITY OUTPUT                                           |
+| CI/CD gate | RCA replay verification | regression diff | PR fix|
++--------------------------------------------------------------+
+```
+
+Replay verification is intentionally strict:
+
+```json
+{
+  "matches_original": true,
+  "snapshot_hash_valid": true,
+  "determinism_manifest_valid": true,
+  "diagnostic_diff": {
+    "changed_count": 0
+  }
+}
 ```
 
 ## What It Detects
@@ -316,7 +340,7 @@ The harness:
 - writes `reports/company_pipeline_report.md`,
 - exits with status code `1` when the policy gate blocks the simulated merge.
 
-This is the portfolio case study workflow: a developer changes a RAG routing prompt, CI captures telemetry, `wdif` detects structural prompt failure without API calls, and the PR is blocked with a remediation report.
+This models the production workflow: a developer changes a RAG routing prompt, CI captures telemetry, `wdif` detects structural prompt failure without API calls, and the PR is blocked with a remediation report.
 
 ## Example JSON Diagnostic
 
@@ -342,6 +366,8 @@ This is the portfolio case study workflow: a developer changes a RAG routing pro
 - `wdif/parser.py`: OpenInference/OpenTelemetry-style JSON ingestion and execution tree reconstruction.
 - `wdif/extractors.py`: prompt, output, and retrieval document normalization across common trace schemas.
 - `wdif/heuristics/`: deterministic failure detectors.
+- `wdif/causal.py`: propagation-aware RCA linking upstream and downstream failure signatures.
+- `wdif/replay/`: immutable evidence snapshots, deterministic replay, manifest validation, and snapshot diffing.
 - `wdif/remediation/differ.py`: unified diff compiler for prompt layout remediations.
 - `wdif/engine.py`: orchestrates tree-level and span-level analysis.
 - `wdif/cli.py`: human, JSON, batch, tree, report, and CI-facing command surface.
@@ -397,11 +423,12 @@ Run import and syntax verification:
 python -m compileall wdif tests
 ```
 
-## Roadmap
+## Stabilization Backlog
 
 - Add first-class Phoenix, LangSmith, and Opik fixture exports.
-- Add prompt diff and prompt compression recommendations.
-- Add GitHub PR review comments through the GitHub REST API.
+- Add skew-tolerant ordering metadata for distributed traces.
+- Add graph pruning controls for large propagation chains.
+- Add snapshot storage deduplication for long-running regression suites.
 - Publish package metadata and release workflow.
 
 ## License
