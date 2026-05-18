@@ -16,6 +16,7 @@ from wdif.export import render_aggregate_html
 from wdif.ingestion import DeadLetterQueue, TraceStagingBuffer, read_json_stream
 from wdif.parser import OpenInferenceParser
 from wdif.realtime import watch_file
+from wdif.replay import EvidenceSnapshotEngine, ReplayEngine, diff_snapshots
 from wdif.report import render_html_report, render_markdown_report
 
 app = typer.Typer(help="Diagnose LLM, RAG, and agent failures from local trace JSON.")
@@ -226,6 +227,100 @@ def watch(
         diagnostic_exit = config.exit_code_for({diagnostic.severity for diagnostic in stats.diagnostics})
         ingestion_exit = config.ingestion_exit_code(stats.dead_letter_count)
         raise typer.Exit(max(diagnostic_exit, ingestion_exit))
+
+
+@app.command()
+def snapshot(
+    trace_file: Path = typer.Argument(..., exists=True, readable=True, help="Trace JSON/JSONL file to snapshot."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output .wdif snapshot path."),
+    config_file: Optional[Path] = typer.Option(None, "--config", "-c", exists=True, readable=True),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable snapshot metadata."),
+):
+    """Capture an immutable replay snapshot for deterministic RCA verification."""
+
+    config = _load_config_or_exit(config_file)
+    snapshot_path = output or trace_file.with_suffix(".wdif")
+    evidence = EvidenceSnapshotEngine().capture_trace_file(trace_file, config=config)
+    EvidenceSnapshotEngine.save_snapshot(evidence, snapshot_path)
+    payload = {
+        "snapshot_path": str(snapshot_path),
+        "snapshot_id": evidence.snapshot_id,
+        "snapshot_hash": evidence.snapshot_hash,
+        "diagnostic_count": len(evidence.diagnostics),
+        "span_count": evidence.metadata.get("span_count", 0),
+    }
+    if json_output:
+        console.print_json(data=payload)
+    else:
+        console.print(
+            Panel(
+                f"[bold]Snapshot:[/bold] {snapshot_path}\n"
+                f"[bold]Snapshot ID:[/bold] {evidence.snapshot_id}\n"
+                f"[bold]SHA256:[/bold] {evidence.snapshot_hash}\n"
+                f"[bold]Diagnostics:[/bold] {len(evidence.diagnostics)}",
+                title="WDIF Snapshot",
+                border_style="cyan",
+            )
+        )
+
+
+@app.command()
+def replay(
+    snapshot_file: Path = typer.Argument(..., exists=True, readable=True, help="Replay .wdif snapshot file."),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable replay result."),
+):
+    """Replay an evidence snapshot and verify deterministic diagnostic equality."""
+
+    evidence = EvidenceSnapshotEngine.load_snapshot(snapshot_file)
+    result = ReplayEngine().replay(evidence)
+    if json_output:
+        console.print_json(data=result.to_dict())
+    else:
+        status = "MATCH" if result.matches_original else "DRIFT"
+        color = "green" if result.matches_original else "red"
+        console.print(
+            Panel(
+                f"[bold]Snapshot ID:[/bold] {result.snapshot_id}\n"
+                f"[bold]Hash valid:[/bold] {result.snapshot_hash_valid}\n"
+                f"[bold]Manifest valid:[/bold] {result.determinism_manifest_valid}\n"
+                f"[bold]Replay status:[/bold] [{color}]{status}[/{color}]\n"
+                f"[bold]Diff count:[/bold] {result.diagnostic_diff['changed_count']}",
+                title="WDIF Replay",
+                border_style=color,
+            )
+        )
+    if not result.matches_original:
+        raise typer.Exit(1)
+
+
+@app.command("diff")
+def diff_command(
+    before: Path = typer.Argument(..., exists=True, readable=True, help="Earlier .wdif snapshot."),
+    after: Path = typer.Argument(..., exists=True, readable=True, help="Later .wdif snapshot."),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable diff."),
+):
+    """Diff two evidence snapshots for RCA and propagation regressions."""
+
+    before_snapshot = EvidenceSnapshotEngine.load_snapshot(before)
+    after_snapshot = EvidenceSnapshotEngine.load_snapshot(after)
+    result = diff_snapshots(before_snapshot, after_snapshot)
+    if json_output:
+        console.print_json(data=result)
+        return
+
+    console.print(
+        Panel(
+            f"[bold]Trace IDs match:[/bold] {result['trace_id_matches']}\n"
+            f"[bold]Before hash valid:[/bold] {result['snapshot_a_hash_valid']}\n"
+            f"[bold]After hash valid:[/bold] {result['snapshot_b_hash_valid']}\n"
+            f"[bold]Before manifest valid:[/bold] {result['snapshot_a_manifest_valid']}\n"
+            f"[bold]After manifest valid:[/bold] {result['snapshot_b_manifest_valid']}\n"
+            f"[bold]Diagnostic changes:[/bold] {result['diagnostic_diff']['changed_count']}\n"
+            f"[bold]Propagation depth delta:[/bold] {result['propagation_depth']['delta']}",
+            title="WDIF Snapshot Diff",
+            border_style="cyan",
+        )
+    )
 
 
 @app.command()
