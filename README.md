@@ -378,6 +378,7 @@ Detailed engineering docs live in [`docs/`](docs/README.md):
 - [Deterministic replay architecture](docs/deterministic-replay.md)
 - [Causal propagation model](docs/causal-propagation.md)
 - [Replay demo](docs/replay-demo.md)
+- [Engineering article: why deterministic replay matters](docs/articles/why-deterministic-replay-matters.md)
 - [Open research problems](docs/research-frontiers.md)
 - [Release and versioning strategy](docs/versioning.md)
 - [Contribution standards](CONTRIBUTING.md)
@@ -430,6 +431,28 @@ python benchmarks/run_benchmarks.py --trace benchmarks/synthetic_100k.json
 ```
 
 The headline benchmark appears near the top of this README; rerun this locally to refresh machine-specific numbers.
+
+## Ecosystem Examples
+
+Run OpenInference-style semantic fixtures:
+
+```bash
+wdif analyze examples/openinference/semantic_trace.json --json
+```
+
+Run OpenTelemetry/OTLP-style GenAI fixtures:
+
+```bash
+wdif analyze examples/opentelemetry/otlp_genai_trace.json --json
+```
+
+See [`examples/openinference/`](examples/openinference/) and [`examples/opentelemetry/`](examples/opentelemetry/).
+
+## Release Notes
+
+Current launch target: [`v0.1.0: Deterministic Replay Foundation`](RELEASE_NOTES.md).
+
+The release centers on `.wdif` snapshots, determinism manifests, replay verification, snapshot diffing, causal propagation, and integrity validation.
 
 ## Development
 

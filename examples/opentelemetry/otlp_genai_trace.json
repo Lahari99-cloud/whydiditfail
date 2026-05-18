@@ -1,0 +1,90 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": { "stringValue": "checkout-agent" }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "opentelemetry.genai"
+          },
+          "spans": [
+            {
+              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+              "spanId": "otel-root-001",
+              "name": "checkout_agent",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "CHAIN" }
+                }
+              ],
+              "startTimeUnixNano": "1710000000000000000",
+              "endTimeUnixNano": "1710000002000000000"
+            },
+            {
+              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+              "spanId": "otel-retriever-001",
+              "parentSpanId": "otel-root-001",
+              "name": "policy_retriever",
+              "attributes": [
+                {
+                  "key": "openinference.span.kind",
+                  "value": { "stringValue": "RETRIEVER" }
+                },
+                {
+                  "key": "retrieval.documents.0.content",
+                  "value": {
+                    "stringValue": "Orders must not be fulfilled when payment authorization fails."
+                  }
+                },
+                {
+                  "key": "retrieval.documents.0.score",
+                  "value": { "doubleValue": 0.16 }
+                }
+              ],
+              "startTimeUnixNano": "1710000000050000000",
+              "endTimeUnixNano": "1710000000090000000"
+            },
+            {
+              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+              "spanId": "otel-llm-001",
+              "parentSpanId": "otel-root-001",
+              "name": "genai.chat",
+              "attributes": [
+                {
+                  "key": "gen_ai.operation.name",
+                  "value": { "stringValue": "chat" }
+                },
+                {
+                  "key": "gen_ai.request.model",
+                  "value": { "stringValue": "gpt-4o" }
+                },
+                {
+                  "key": "input.value",
+                  "value": {
+                    "stringValue": "System: answer from available checkout policy.\nUser: Should the order be approved if payment authorization failed?"
+                  }
+                },
+                {
+                  "key": "output.value",
+                  "value": {
+                    "stringValue": "The order can be approved and fulfilled immediately."
+                  }
+                }
+              ],
+              "startTimeUnixNano": "1710000000100000000",
+              "endTimeUnixNano": "1710000001900000000"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

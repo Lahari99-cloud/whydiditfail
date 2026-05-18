@@ -1,6 +1,6 @@
 [project]
 name = "whydiditfail"
-version = "1.0.0"
+version = "0.1.0"
 description = "A framework-agnostic, zero-API-cost local diagnostic engine for production LLM, RAG, and Agent failure topologies."
 readme = "README.md"
 requires-python = ">=3.10,<4.0"

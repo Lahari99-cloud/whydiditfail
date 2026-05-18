@@ -7,6 +7,7 @@ This directory documents the engineering contracts behind WDIF. The goal is to m
 - [Deterministic Replay Architecture](deterministic-replay.md)
 - [Causal Propagation Model](causal-propagation.md)
 - [Replay Demo](replay-demo.md)
+- [Why Deterministic Replay Matters for Agentic AI Reliability](articles/why-deterministic-replay-matters.md)
 - [Open Research Problems](research-frontiers.md)
 - [Release and Versioning Strategy](versioning.md)
 

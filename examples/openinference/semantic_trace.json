@@ -1,0 +1,57 @@
+{
+  "spans": [
+    {
+      "span_id": "oi-root-001",
+      "trace_id": "oi-trace-001",
+      "name": "support_refund_agent",
+      "attributes": {
+        "openinference.span.kind": "CHAIN"
+      },
+      "start_time_ms": 1710000000000,
+      "end_time_ms": 1710000000900
+    },
+    {
+      "span_id": "oi-retriever-001",
+      "trace_id": "oi-trace-001",
+      "parent_id": "oi-root-001",
+      "name": "policy_vector_search",
+      "attributes": {
+        "openinference.span.kind": "RETRIEVER"
+      },
+      "input": {
+        "query": "refund after 90 days"
+      },
+      "output": {
+        "documents": [
+          {
+            "id": "refund_policy_30_day",
+            "content": "Refunds are available within 30 days for unused subscriptions.",
+            "score": 0.18
+          }
+        ]
+      },
+      "start_time_ms": 1710000000100,
+      "end_time_ms": 1710000000200
+    },
+    {
+      "span_id": "oi-llm-001",
+      "trace_id": "oi-trace-001",
+      "parent_id": "oi-root-001",
+      "name": "final_answer",
+      "attributes": {
+        "openinference.span.kind": "LLM",
+        "llm.model_name": "gpt-4o"
+      },
+      "input": {
+        "prompts": [
+          "System: answer only from retrieved refund policy.\nRetrieved: Refunds are available within 30 days for unused subscriptions.\nUser: Can I get a refund after 90 days?"
+        ]
+      },
+      "output": {
+        "value": "Yes. Premium enterprise accounts receive refunds after 90 days under the Platinum Success Guarantee."
+      },
+      "start_time_ms": 1710000000300,
+      "end_time_ms": 1710000000800
+    }
+  ]
+}
