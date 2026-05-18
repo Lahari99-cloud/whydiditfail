@@ -219,6 +219,14 @@ Export offline telemetry analytics:
 wdif export examples --format html --output reports/aggregate.html
 ```
 
+Capture and replay deterministic evidence snapshots:
+
+```bash
+wdif snapshot examples/openinference_trace.json --output reports/openinference_trace.wdif
+wdif replay reports/openinference_trace.wdif
+wdif diff reports/before.wdif reports/after.wdif
+```
+
 ## Production Chaos Stream Test
 
 Generate a messy, out-of-order JSONL span stream using OpenInference-style semantic attributes:
@@ -283,6 +291,7 @@ The production ingestion path includes explicit safeguards for common enterprise
 - **Tokenizer routing**: `tokenizer_routes` selects per-span tokenizers from model metadata and marks fallback geometry explicitly.
 - **RCA ranking**: diagnostics include deterministic confidence scores, contributing evidence, and co-occurring failure context.
 - **Causal graph analysis**: ranked findings are annotated with upstream/downstream roles, propagation depth, and causal chains.
+- **Deterministic replay**: `.wdif` snapshots include immutable span trees, RCA output, config, SHA-256 integrity validation, and a determinism manifest.
 - **Orphan detection**: unresolved child spans emit `ORPHANED_SPAN_TREE` diagnostics instead of silently becoming clean roots.
 - **Dead-letter queue**: malformed JSON rows are written to a `.corrupted.log` file and valid rows continue processing.
 - **DLQ policy exits**: set `ingestion.fail_on_dead_letters: true` and map `dead_letter_severity` through `exit_codes`.
