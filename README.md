@@ -67,6 +67,8 @@ Recent local runs on a 100,000-span synthetic trace land in the 37k-40k logs/sec
 +--------------------------------------------------------------+
 ```
 
+![WhyDidItFail architecture](docs/assets/architecture.svg)
+
 Replay verification is intentionally strict:
 
 ```json
@@ -79,6 +81,17 @@ Replay verification is intentionally strict:
   }
 }
 ```
+
+![WDIF replay terminal demo](docs/assets/replay-demo.svg)
+
+## Design Principles
+
+- **Deterministic over probabilistic**: use structural evidence before probabilistic judgment.
+- **Evidence over telemetry**: traces are raw material; replayable RCA is the deliverable.
+- **Replayable over ephemeral**: every serious diagnostic should be reconstructible later.
+- **Causal graphs over flat metrics**: production AI failures propagate across spans.
+- **Local-first infrastructure**: the core engine runs without API calls or cloud dependencies.
+- **Governance-aware reliability**: policy exits, manifests, and hashes belong in the core path.
 
 ## What It Detects
 
@@ -360,6 +373,15 @@ This models the production workflow: a developer changes a RAG routing prompt, C
 
 ## Architecture
 
+Detailed engineering docs live in [`docs/`](docs/README.md):
+
+- [Deterministic replay architecture](docs/deterministic-replay.md)
+- [Causal propagation model](docs/causal-propagation.md)
+- [Replay demo](docs/replay-demo.md)
+- [Open research problems](docs/research-frontiers.md)
+- [Release and versioning strategy](docs/versioning.md)
+- [Contribution standards](CONTRIBUTING.md)
+
 - `wdif/models.py`: typed trace and diagnostic domain objects.
 - `wdif/config/engine.py`: YAML/TOML policy loading, severity routing, and tokenizer policy.
 - `wdif/core/runner.py`: multi-core batch execution with `ProcessPoolExecutor`.
@@ -422,6 +444,33 @@ Run import and syntax verification:
 ```bash
 python -m compileall wdif tests
 ```
+
+## Open Research Problems
+
+WDIF deliberately documents the hard problems that remain:
+
+- distributed causal correctness under async orchestration and clock skew,
+- graph explosion control for large propagation chains,
+- adaptive propagation priors from organizational reliability memory,
+- intervention-aware RCA for safe runtime controls,
+- replay determinism when traces are partial or eventually consistent.
+
+See [Open Research Problems](docs/research-frontiers.md) for the detailed version.
+
+## Contribution Standards
+
+Core contributions must preserve deterministic behavior. Any change that affects normalization, ranking, causal propagation, or diagnostics should keep replay equality intact and update the relevant docs.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full infrastructure contribution philosophy.
+
+## Release Strategy
+
+- `v0.1`: deterministic replay foundation.
+- `v0.2`: distributed causality foundation.
+- `v0.3`: adaptive reliability memory.
+- `v1.0`: stable evidence contract.
+
+See [Release and Versioning Strategy](docs/versioning.md).
 
 ## Stabilization Backlog
 

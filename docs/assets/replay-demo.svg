@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="560" viewBox="0 0 1180 560" role="img" aria-labelledby="title desc">
+  <title id="title">WDIF replay terminal demo</title>
+  <desc id="desc">Terminal-style demo showing snapshot, replay, and diff commands with deterministic validation output.</desc>
+  <rect width="1180" height="560" rx="18" fill="#111827" />
+  <rect x="0" y="0" width="1180" height="44" rx="18" fill="#1f2937" />
+  <circle cx="28" cy="22" r="7" fill="#ef4444" />
+  <circle cx="52" cy="22" r="7" fill="#f59e0b" />
+  <circle cx="76" cy="22" r="7" fill="#22c55e" />
+  <text x="104" y="28" fill="#d1d5db" font-family="Consolas, monospace" font-size="14">wdif replay evidence demo</text>
+
+  <text x="34" y="86" fill="#93c5fd" font-family="Consolas, monospace" font-size="20">$ wdif snapshot examples/openinference_trace.json --output reports/openinference_trace.wdif --json</text>
+  <text x="54" y="124" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">{ "snapshot_hash_valid": true, "diagnostic_count": 4, "snapshot_path": "reports/openinference_trace.wdif" }</text>
+
+  <text x="34" y="184" fill="#93c5fd" font-family="Consolas, monospace" font-size="20">$ wdif replay reports/openinference_trace.wdif --json</text>
+  <text x="54" y="222" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">{</text>
+  <text x="82" y="254" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">"matches_original": true,</text>
+  <text x="82" y="286" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">"snapshot_hash_valid": true,</text>
+  <text x="82" y="318" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">"determinism_manifest_valid": true,</text>
+  <text x="82" y="350" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">"diagnostic_diff": { "changed_count": 0 }</text>
+  <text x="54" y="382" fill="#d1fae5" font-family="Consolas, monospace" font-size="18">}</text>
+
+  <text x="34" y="442" fill="#93c5fd" font-family="Consolas, monospace" font-size="20">$ wdif diff reports/before.wdif reports/after.wdif --json</text>
+  <text x="54" y="480" fill="#fef3c7" font-family="Consolas, monospace" font-size="18">{ "changed_count": 2, "new_failures": ["AGENT_LOOP"], "propagation_depth_delta": 1 }</text>
+  <text x="34" y="526" fill="#9ca3af" font-family="Consolas, monospace" font-size="16">No LLM judge. No cloud call. Reproducible RCA evidence from trace snapshots.</text>
+</svg>

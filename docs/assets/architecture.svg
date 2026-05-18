@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">WhyDidItFail deterministic causal diagnostics architecture</title>
+  <desc id="desc">Architecture diagram showing trace ingestion, staging, heuristics, causal propagation, replay snapshots, manifests, governance, and diffing.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f8fb; }
+      .panel { fill: #ffffff; stroke: #202938; stroke-width: 2; rx: 14; }
+      .lane { fill: #eef2f7; stroke: #5b677a; stroke-width: 1.5; rx: 12; }
+      .title { font: 700 30px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 16px Arial, sans-serif; fill: #4b5563; }
+      .label { font: 700 17px Arial, sans-serif; fill: #111827; }
+      .small { font: 400 13px Arial, sans-serif; fill: #374151; }
+      .tiny { font: 400 12px Arial, sans-serif; fill: #4b5563; }
+      .arrow { stroke: #2563eb; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 8 7; }
+      .accent { fill: #dbeafe; stroke: #2563eb; }
+      .green { fill: #dcfce7; stroke: #16a34a; }
+      .amber { fill: #fef3c7; stroke: #d97706; }
+      .red { fill: #fee2e2; stroke: #dc2626; }
+      .purple { fill: #ede9fe; stroke: #7c3aed; }
+      .ink { fill: #111827; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <path d="M 0 0 L 12 4 L 0 8 z" fill="#2563eb" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1280" height="760" />
+  <text class="title" x="54" y="58">WhyDidItFail Architecture</text>
+  <text class="subtitle" x="54" y="86">Deterministic causal diagnostics, replayable evidence, and governance-aware reliability checks for production AI traces.</text>
+
+  <rect class="lane" x="40" y="120" width="1200" height="110" />
+  <text class="label" x="62" y="150">Telemetry Sources</text>
+  <rect class="panel accent" x="70" y="170" width="210" height="42" />
+  <text class="small" x="92" y="196">OpenInference / OTel</text>
+  <rect class="panel accent" x="315" y="170" width="210" height="42" />
+  <text class="small" x="354" y="196">JSON / JSONL</text>
+  <rect class="panel accent" x="560" y="170" width="210" height="42" />
+  <text class="small" x="588" y="196">Split collector logs</text>
+  <rect class="panel accent" x="805" y="170" width="210" height="42" />
+  <text class="small" x="844" y="196">CI trace dumps</text>
+
+  <rect class="lane" x="40" y="270" width="1200" height="140" />
+  <text class="label" x="62" y="300">Ingestion and Staging</text>
+  <rect class="panel" x="70" y="325" width="210" height="54" />
+  <text class="small" x="94" y="348">Streaming parser</text>
+  <text class="tiny" x="94" y="366">schema normalization</text>
+  <rect class="panel amber" x="315" y="325" width="210" height="54" />
+  <text class="small" x="343" y="348">Dead-letter queue</text>
+  <text class="tiny" x="343" y="366">malformed JSON isolation</text>
+  <rect class="panel" x="560" y="325" width="210" height="54" />
+  <text class="small" x="587" y="348">Bounded staging</text>
+  <text class="tiny" x="587" y="366">trace_id grouping</text>
+  <rect class="panel" x="805" y="325" width="210" height="54" />
+  <text class="small" x="831" y="348">Tree resolver</text>
+  <text class="tiny" x="831" y="366">parent/child topology</text>
+
+  <rect class="lane" x="40" y="450" width="565" height="210" />
+  <text class="label" x="62" y="480">Diagnostic Engine</text>
+  <rect class="panel green" x="70" y="505" width="210" height="54" />
+  <text class="small" x="103" y="528">Heuristics</text>
+  <text class="tiny" x="103" y="546">context, retrieval, loops</text>
+  <rect class="panel green" x="335" y="505" width="210" height="54" />
+  <text class="small" x="363" y="528">Tokenizer routing</text>
+  <text class="tiny" x="363" y="546">per-span model geometry</text>
+  <rect class="panel purple" x="70" y="585" width="210" height="54" />
+  <text class="small" x="96" y="608">Causal propagation</text>
+  <text class="tiny" x="96" y="626">upstream/downstream chains</text>
+  <rect class="panel purple" x="335" y="585" width="210" height="54" />
+  <text class="small" x="367" y="608">RCA ranking</text>
+  <text class="tiny" x="367" y="626">confidence and severity</text>
+
+  <rect class="lane" x="675" y="450" width="565" height="210" />
+  <text class="label" x="697" y="480">Evidence and Governance</text>
+  <rect class="panel red" x="705" y="505" width="210" height="54" />
+  <text class="small" x="743" y="528">.wdif snapshot</text>
+  <text class="tiny" x="743" y="546">immutable span evidence</text>
+  <rect class="panel red" x="970" y="505" width="210" height="54" />
+  <text class="small" x="1006" y="528">Manifest hashes</text>
+  <text class="tiny" x="1006" y="546">config, ranking, diagnostics</text>
+  <rect class="panel" x="705" y="585" width="210" height="54" />
+  <text class="small" x="758" y="608">Replay</text>
+  <text class="tiny" x="758" y="626">RCA equality checks</text>
+  <rect class="panel" x="970" y="585" width="210" height="54" />
+  <text class="small" x="1022" y="608">Diffing</text>
+  <text class="tiny" x="1022" y="626">regression evidence</text>
+
+  <rect class="panel" x="436" y="690" width="410" height="44" />
+  <text class="small" x="468" y="716">Policy gate and governance outputs: JSON, Markdown, HTML, CI exits</text>
+
+  <path class="arrow" d="M 175 230 L 175 315" />
+  <path class="arrow" d="M 420 230 L 420 315" />
+  <path class="arrow" d="M 665 230 L 665 315" />
+  <path class="arrow" d="M 910 230 L 910 315" />
+  <path class="arrow" d="M 1015 352 L 1135 352 L 1135 430 L 440 430 L 440 495" />
+  <path class="arrow" d="M 545 612 L 695 612" />
+  <path class="arrow" d="M 810 560 L 810 575" />
+  <path class="arrow" d="M 915 532 L 960 532" />
+  <path class="arrow" d="M 915 612 L 960 612" />
+  <path class="arrow dashed" d="M 1075 640 L 1075 712 L 856 712" />
+  <path class="arrow dashed" d="M 705 612 L 606 612" />
+</svg>
