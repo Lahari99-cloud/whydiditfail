@@ -1,0 +1,41 @@
+{
+  "spans": [
+    {
+      "span_id": "px-root",
+      "trace_id": "phoenix-demo",
+      "name": "Phoenix RAG pipeline",
+      "attributes": {
+        "openinference.span.kind": "CHAIN",
+        "phoenix.project_name": "wdif-fixtures"
+      },
+      "start_time_ms": 1710000100000,
+      "end_time_ms": 1710000107000
+    },
+    {
+      "span_id": "px-context",
+      "trace_id": "phoenix-demo",
+      "parent_id": "px-root",
+      "name": "Phoenix context_builder",
+      "attributes": {
+        "openinference.span.kind": "CHAIN",
+        "input.value": "Summarize the escalation policy.",
+        "output.value": "Escalation policy context includes manager approval, support tier routing, incident severity notes, and customer impact details."
+      },
+      "start_time_ms": 1710000100100,
+      "end_time_ms": 1710000101000
+    },
+    {
+      "span_id": "px-llm",
+      "trace_id": "phoenix-demo",
+      "parent_id": "px-root",
+      "name": "Phoenix answer_model",
+      "attributes": {
+        "openinference.span.kind": "LLM",
+        "input.value": "System: answer only from retrieved context. User: What is the escalation policy?",
+        "output.value": "The request can be escalated directly to the executive team without manager approval."
+      },
+      "start_time_ms": 1710000101200,
+      "end_time_ms": 1710000106500
+    }
+  ]
+}

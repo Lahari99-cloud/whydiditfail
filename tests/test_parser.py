@@ -67,3 +67,21 @@ def test_parser_flattens_otlp_resource_spans_and_hydrates_io():
     assert roots[0].span_type == SpanType.LLM
     assert roots[0].input_data["value"] == "question"
     assert roots[0].output_data["value"] == "answer"
+
+
+def test_observability_fixtures_parse_with_source_metadata():
+    parser = OpenInferenceParser()
+
+    expectations = {
+        "examples/langsmith_trace.json": ("ls-root", "langsmith.project_name"),
+        "examples/phoenix_trace.json": ("px-root", "phoenix.project_name"),
+        "examples/opik_trace.json": ("opik-root", "opik.project_name"),
+    }
+
+    for fixture, (root_id, metadata_key) in expectations.items():
+        roots = list(parser.iter_trace_payloads(fixture))
+        parsed = parser.parse_file_payload(roots[0])
+
+        assert parsed[0].span_id == root_id
+        assert metadata_key in parsed[0].attributes
+        assert parsed[0].children

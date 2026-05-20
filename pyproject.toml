@@ -5,10 +5,10 @@ description = "A framework-agnostic, zero-API-cost local diagnostic engine for p
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 license = "MIT"
-authors = [{ name = "Lahari", email = "lahari@example.com" }]
+authors = [{ name = "Lahari", email = "laharitadepalli183@gmail.com" }]
 keywords = ["llm", "observability", "opentelemetry", "openinference", "ci-cd", "rag"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -24,7 +24,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com"
+Repository = "https://github.com/Lahari99-cloud/whydiditfail"
+Issues = "https://github.com/Lahari99-cloud/whydiditfail/issues"
 
 [project.scripts]
 wdif = "wdif.cli:app"

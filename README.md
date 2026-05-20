@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Built with: Rich](https://img.shields.io/badge/Built%20with-Rich-purple.svg)](https://github.com/Textualize/rich)
+[![CI](https://github.com/Lahari99-cloud/whydiditfail/actions/workflows/ci.yml/badge.svg)](https://github.com/Lahari99-cloud/whydiditfail/actions/workflows/ci.yml)
 
 Deterministic causal diagnostics and replayable evidence snapshots for production LLM, RAG, and agent failures, running locally on your CPU for exactly $0 in API calls.
 
@@ -16,6 +17,14 @@ wdif analyze examples/sample_trace.json --json
 wdif snapshot examples/openinference_trace.json --output reports/openinference_trace.wdif
 wdif replay reports/openinference_trace.wdif
 wdif diff reports/before.wdif reports/after.wdif
+```
+
+Observability fixtures:
+
+```bash
+wdif analyze examples/langsmith_trace.json --json
+wdif analyze examples/phoenix_trace.json --json
+wdif analyze examples/opik_trace.json --json
 ```
 
 Local development:
@@ -497,11 +506,15 @@ See [Release and Versioning Strategy](docs/versioning.md).
 
 ## Stabilization Backlog
 
-- Add first-class Phoenix, LangSmith, and Opik fixture exports.
+- Add richer Phoenix, LangSmith, and Opik fixture exports as upstream schemas evolve.
 - Add skew-tolerant ordering metadata for distributed traces.
 - Add graph pruning controls for large propagation chains.
 - Add snapshot storage deduplication for long-running regression suites.
-- Publish package metadata and release workflow.
+- Publish package from the release workflow after PyPI trusted publishing is configured.
+
+## Security
+
+Please report suspected vulnerabilities privately. See [SECURITY.md](SECURITY.md).
 
 ## License
 

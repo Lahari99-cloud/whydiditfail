@@ -1,0 +1,44 @@
+{
+  "spans": [
+    {
+      "span_id": "ls-root",
+      "trace_id": "langsmith-demo",
+      "name": "LangSmith customer_support_agent",
+      "attributes": {
+        "openinference.span.kind": "CHAIN",
+        "langsmith.run_type": "chain",
+        "langsmith.project_name": "wdif-fixtures"
+      },
+      "start_time_ms": 1710000000000,
+      "end_time_ms": 1710000006000
+    },
+    {
+      "span_id": "ls-retriever",
+      "trace_id": "langsmith-demo",
+      "parent_id": "ls-root",
+      "name": "LangSmith policy_retriever",
+      "attributes": {
+        "openinference.span.kind": "RETRIEVER",
+        "langsmith.run_type": "retriever",
+        "retrieval.documents.0.content": "Refunds are available within 30 days for unused subscriptions.",
+        "retrieval.documents.0.score": 0.16
+      },
+      "start_time_ms": 1710000000200,
+      "end_time_ms": 1710000000600
+    },
+    {
+      "span_id": "ls-llm",
+      "trace_id": "langsmith-demo",
+      "parent_id": "ls-root",
+      "name": "LangSmith final_answer",
+      "attributes": {
+        "openinference.span.kind": "LLM",
+        "langsmith.run_type": "llm",
+        "input.value": "User asks whether a 90 day refund is available.",
+        "output.value": "Yes, refunds are available after 90 days for premium users."
+      },
+      "start_time_ms": 1710000000700,
+      "end_time_ms": 1710000005000
+    }
+  ]
+}

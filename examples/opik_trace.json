@@ -1,0 +1,57 @@
+{
+  "spans": [
+    {
+      "span_id": "opik-root",
+      "trace_id": "opik-demo",
+      "name": "Opik agent run",
+      "attributes": {
+        "openinference.span.kind": "AGENT",
+        "opik.project_name": "wdif-fixtures"
+      },
+      "start_time_ms": 1710000200000,
+      "end_time_ms": 1710000208000
+    },
+    {
+      "span_id": "opik-tool-1",
+      "trace_id": "opik-demo",
+      "parent_id": "opik-root",
+      "name": "crm_lookup",
+      "attributes": {
+        "openinference.span.kind": "TOOL",
+        "tool.name": "crm_lookup",
+        "status.code": "ERROR",
+        "exception.message": "CRM lookup timed out."
+      },
+      "start_time_ms": 1710000200200,
+      "end_time_ms": 1710000201800
+    },
+    {
+      "span_id": "opik-tool-2",
+      "trace_id": "opik-demo",
+      "parent_id": "opik-root",
+      "name": "crm_lookup",
+      "attributes": {
+        "openinference.span.kind": "TOOL",
+        "tool.name": "crm_lookup",
+        "status.code": "ERROR",
+        "exception.message": "CRM lookup timed out."
+      },
+      "start_time_ms": 1710000202000,
+      "end_time_ms": 1710000203600
+    },
+    {
+      "span_id": "opik-tool-3",
+      "trace_id": "opik-demo",
+      "parent_id": "opik-root",
+      "name": "crm_lookup",
+      "attributes": {
+        "openinference.span.kind": "TOOL",
+        "tool.name": "crm_lookup",
+        "status.code": "ERROR",
+        "exception.message": "CRM lookup timed out."
+      },
+      "start_time_ms": 1710000203800,
+      "end_time_ms": 1710000205400
+    }
+  ]
+}
